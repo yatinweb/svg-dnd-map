@@ -1,0 +1,9 @@
+<div class="toolbar">
+  <input type="file" (change)="onSVGUpload($event)" accept=".svg" />
+  <button (click)="addItem('Chair', 'furniture')">Add Chair</button>
+  <button (click)="addItem('AC', 'electronics')">Add AC</button>
+  <button (click)="savePositions()">💾 Save</button>
+  <button (click)="clearPositions()">🗑️ Clear</button>
+</div>
+
+<div #svgContainer class="svg-container"></div>

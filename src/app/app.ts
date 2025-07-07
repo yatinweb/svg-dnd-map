@@ -48,12 +48,12 @@ export class App {
   itemCount = 0;
   tooltipEl: HTMLElement | null = null;
   @ViewChild('tooltipContainer') tooltipContainer!: ElementRef;
-tooltipContent = '';
-tooltipX = 0;
-tooltipY = 0;
-tooltipVisible = false;
+  tooltipContent = '';
+  tooltipX = 0;
+  tooltipY = 0;
+  tooltipVisible = false;
 
-constructor(private dialog: MatDialog){}
+  constructor(private dialog: MatDialog) { }
 
   ngOnInit() {
     this.filteredSensors = this.sensorCtrl.valueChanges.pipe(
@@ -149,14 +149,34 @@ constructor(private dialog: MatDialog){}
     return { x: 0, y: 0 };
   }
 
+  findContainingRoom(svgEl: SVGElement, x: number, y: number): SVGGElement | null {
+    const groups = svgEl.querySelectorAll('[data-room]');
+    for (const el of Array.from(groups)) {
+      const bbox = (el as SVGGElement).getBBox();
+      if (x >= bbox.x && x <= bbox.x + bbox.width && y >= bbox.y && y <= bbox.y + bbox.height) {
+        return el as SVGGElement;
+      }
+    }
+    return null;
+  }
+
   placeSensor(type: string, cx: number, cy: number): void {
     const svgEl = this.svgContainer.nativeElement.querySelector('svg');
     if (!svgEl) return;
 
     const ns = 'http://www.w3.org/2000/svg';
+    const point = this.getSVGCoordinates(cx, cy, svgEl);
+
+    // 🔍 Find the room containing the drop point
+    const room = this.findContainingRoom(svgEl, point.x, point.y);
+    if (!room) {
+      alert('Please drop inside a room.');
+      return;
+    }
+
     const icon = document.createElementNS(ns, 'text');
-    icon.setAttribute('x', cx.toString());
-    icon.setAttribute('y', cy.toString());
+    icon.setAttribute('x', point.x.toString());
+    icon.setAttribute('y', point.y.toString());
     icon.setAttribute('font-family', 'Material Icons');
     icon.setAttribute('font-size', '24');
     icon.setAttribute('fill', '#3f51b5');
@@ -165,34 +185,43 @@ constructor(private dialog: MatDialog){}
     icon.setAttribute('data-id', 'sensor-' + this.itemCount);
     icon.setAttribute('class', 'sensor-icon');
     icon.setAttribute('title', type);
-    svgEl.appendChild(icon);
+
+    // ➕ Add interactivity
     icon.addEventListener('mouseenter', (e) => this.showTooltip(e, type));
-icon.addEventListener('mouseleave', () => this.hideTooltip());
+    icon.addEventListener('mouseleave', () => this.hideTooltip());
+    icon.addEventListener('click', () => {
+      const dialogRef = this.dialog.open(SensorDetailDialogComponent, {
+        width: '300px',
+        data: {
+          id: icon.getAttribute('data-id'),
+          type,
+          area: room.getAttribute('data-room')
+        }
+      });
 
-icon.addEventListener('click', () => {
-  this.dialog.open(SensorDetailDialogComponent, {
-    width: '300px',
-    data: {
-      id: 'sensorId',
-      type,
-      area: 'Room-1' // You can dynamically assign this if available
-    }
-  });
-});
+      dialogRef.afterClosed().subscribe(result => {
+        if (result?.delete) {
+          icon.remove(); // Remove from SVG
+        }
+      });
+    });
 
+    // 🔗 Append icon to the room element
+    room.appendChild(icon);
     this.itemCount++;
   }
 
-  showTooltip(event: MouseEvent, content: string): void {
-  this.tooltipX = event.offsetX + 10;
-  this.tooltipY = event.offsetY + 10;
-  this.tooltipContent = content;
-  this.tooltipVisible = true;
-}
 
-hideTooltip(): void {
-  this.tooltipVisible = false;
-}
+  showTooltip(event: MouseEvent, content: string): void {
+    this.tooltipX = event.offsetX + 10;
+    this.tooltipY = event.offsetY + 10;
+    this.tooltipContent = content;
+    this.tooltipVisible = true;
+  }
+
+  hideTooltip(): void {
+    this.tooltipVisible = false;
+  }
 
   savePositions(): void {
     const svg = this.svgContainer.nativeElement.querySelector('svg');

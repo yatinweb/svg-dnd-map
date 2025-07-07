@@ -1,9 +1,22 @@
+<!-- Sensor Search (mat-form-field works here) -->
+<mat-form-field appearance="fill">
+  <mat-label>Search Sensor</mat-label>
+  <input matInput [formControl]="sensorCtrl" [matAutocomplete]="auto" />
+  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addItem($event.option.value)">
+    <mat-option *ngFor="let sensor of filteredSensors | async" [value]="sensor">
+      {{ sensor }}
+    </mat-option>
+  </mat-autocomplete>
+</mat-form-field>
+
+<!-- SVG Upload (button triggers hidden input) -->
+<button mat-raised-button color="primary" (click)="fileInput.click()">
+  Upload SVG Layout
+</button>
+<input type="file" #fileInput hidden (change)="onSVGUpload($event)" accept=".svg" />
+
+<div #svgContainer class="svg-container"></div>
 <div class="toolbar">
-  <input type="file" (change)="onSVGUpload($event)" accept=".svg" />
-  <button (click)="addItem('Chair', 'furniture')">Add Chair</button>
-  <button (click)="addItem('AC', 'electronics')">Add AC</button>
   <button (click)="savePositions()">💾 Save</button>
   <button (click)="clearPositions()">🗑️ Clear</button>
 </div>
-
-<div #svgContainer class="svg-container"></div>

@@ -30,9 +30,27 @@ export class App {
   @ViewChild('fileInput', { static: true }) fileInput!: ElementRef<HTMLInputElement>;
 
   sensorCtrl = new FormControl('');
-  allSensors: string[] = ['Chair', 'AC', 'Light', 'Fan', 'CCTV'];
+  allSensors: string[] = [
+    'Temperature Sensor',
+    'Humidity Sensor',
+    'Motion Sensor',
+    'Smoke Detector',
+    'Air Quality Sensor',
+    'Light Sensor',
+    'CO2 Sensor',
+    'Water Leak Sensor',
+    'Smart Plug',
+    'Door Contact Sensor'
+  ];
   filteredSensors!: Observable<string[]>;
   itemCount = 0;
+  tooltipEl: HTMLElement | null = null;
+  @ViewChild('tooltipContainer') tooltipContainer!: ElementRef;
+tooltipContent = '';
+tooltipX = 0;
+tooltipY = 0;
+tooltipVisible = false;
+
 
   ngOnInit() {
     this.filteredSensors = this.sensorCtrl.valueChanges.pipe(
@@ -48,14 +66,20 @@ export class App {
 
   getSensorIcon(sensor: string): string {
     switch (sensor.toLowerCase()) {
-      case 'chair': return 'event_seat';
-      case 'ac': return 'ac_unit';
-      case 'light': return 'lightbulb';
-      case 'fan': return 'air';
-      case 'cctv': return 'videocam';
-      default: return 'device_unknown';
+      case 'temperature sensor': return 'device_thermostat';
+      case 'humidity sensor': return 'water_drop';
+      case 'motion sensor': return 'sensors';
+      case 'smoke detector': return 'smoke_free';
+      case 'air quality sensor': return 'air';
+      case 'light sensor': return 'wb_incandescent';
+      case 'co2 sensor': return 'cloud';
+      case 'water leak sensor': return 'water_damage';
+      case 'smart plug': return 'power';
+      case 'door contact sensor': return 'sensor_door';
+      default: return 'sensors';
     }
   }
+
 
   onSVGUpload(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -139,8 +163,23 @@ export class App {
     icon.setAttribute('class', 'sensor-icon');
     icon.setAttribute('title', type);
     svgEl.appendChild(icon);
+    icon.addEventListener('mouseenter', (e) => this.showTooltip(e, type));
+icon.addEventListener('mouseleave', () => this.hideTooltip());
+
+
     this.itemCount++;
   }
+
+  showTooltip(event: MouseEvent, content: string): void {
+  this.tooltipX = event.offsetX + 10;
+  this.tooltipY = event.offsetY + 10;
+  this.tooltipContent = content;
+  this.tooltipVisible = true;
+}
+
+hideTooltip(): void {
+  this.tooltipVisible = false;
+}
 
   savePositions(): void {
     const svg = this.svgContainer.nativeElement.querySelector('svg');

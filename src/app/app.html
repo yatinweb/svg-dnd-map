@@ -32,4 +32,8 @@
   <main class="svg-canvas">
     <div #svgContainer class="svg-container"></div>
   </main>
+
+  <div #tooltipContainer class="tooltip-container" *ngIf="tooltipVisible" [style.left.px]="tooltipX" [style.top.px]="tooltipY">
+  {{ tooltipContent }}
+</div>
 </div>

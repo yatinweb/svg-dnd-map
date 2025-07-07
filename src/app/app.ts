@@ -9,6 +9,8 @@ import { CommonModule } from '@angular/common';
 import { Observable, startWith, map } from 'rxjs';
 import interact from 'interactjs';
 import svgPanZoom from 'svg-pan-zoom';
+import { MatDialog } from '@angular/material/dialog';
+import { SensorDetailDialogComponent } from './sensor-detail-dialog/sensor-detail-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -51,6 +53,7 @@ tooltipX = 0;
 tooltipY = 0;
 tooltipVisible = false;
 
+constructor(private dialog: MatDialog){}
 
   ngOnInit() {
     this.filteredSensors = this.sensorCtrl.valueChanges.pipe(
@@ -166,6 +169,16 @@ tooltipVisible = false;
     icon.addEventListener('mouseenter', (e) => this.showTooltip(e, type));
 icon.addEventListener('mouseleave', () => this.hideTooltip());
 
+icon.addEventListener('click', () => {
+  this.dialog.open(SensorDetailDialogComponent, {
+    width: '300px',
+    data: {
+      id: 'sensorId',
+      type,
+      area: 'Room-1' // You can dynamically assign this if available
+    }
+  });
+});
 
     this.itemCount++;
   }

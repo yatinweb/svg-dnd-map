@@ -1,22 +1,35 @@
-<!-- Sensor Search (mat-form-field works here) -->
-<mat-form-field appearance="fill">
-  <mat-label>Search Sensor</mat-label>
-  <input matInput [formControl]="sensorCtrl" [matAutocomplete]="auto" />
-  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addItem($event.option.value)">
-    <mat-option *ngFor="let sensor of filteredSensors | async" [value]="sensor">
-      {{ sensor }}
-    </mat-option>
-  </mat-autocomplete>
-</mat-form-field>
+<!-- Header -->
+<header class="app-header">
+  <button mat-button (click)="fileInput.click()">Choose SVG</button>
+  <button mat-button color="primary" (click)="savePositions()">Save</button>
+  <button mat-button color="warn" (click)="clearAll()">Clear</button>
+  <input type="file" #fileInput hidden (change)="onSVGUpload($event)" accept=".svg" />
+</header>
 
-<!-- SVG Upload (button triggers hidden input) -->
-<button mat-raised-button color="primary" (click)="fileInput.click()">
-  Upload SVG Layout
-</button>
-<input type="file" #fileInput hidden (change)="onSVGUpload($event)" accept=".svg" />
+<div class="layout">
+  <!-- Sidebar: Sensor List -->
+  <aside class="sensor-sidebar">
+    <mat-form-field appearance="fill">
+      <mat-label>Search Sensors</mat-label>
+      <input matInput [formControl]="sensorCtrl" />
+    </mat-form-field>
 
-<div #svgContainer class="svg-container"></div>
-<div class="toolbar">
-  <button (click)="savePositions()">💾 Save</button>
-  <button (click)="clearPositions()">🗑️ Clear</button>
+    <div class="sensor-list">
+      <div
+        class="sensor-item"
+        *ngFor="let sensor of filteredSensors | async"
+        [attr.data-type]="sensor"
+        (mousedown)="prepareDrag(sensor)"
+        matTooltip="{{ sensor }}"
+      >
+        <mat-icon>{{ getSensorIcon(sensor) }}</mat-icon>
+        <span class="sensor-label">{{ sensor }}</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- SVG Canvas -->
+  <main class="svg-canvas">
+    <div #svgContainer class="svg-container"></div>
+  </main>
 </div>

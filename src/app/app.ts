@@ -30,6 +30,7 @@ import { SensorDetailDialogComponent } from './sensor-detail-dialog/sensor-detai
 export class App {
   @ViewChild('svgContainer', { static: true }) svgContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('fileInput', { static: true }) fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('tooltipContainer') tooltipContainer!: ElementRef;
 
   sensorCtrl = new FormControl('');
   allSensors: string[] = [
@@ -46,12 +47,16 @@ export class App {
   ];
   filteredSensors!: Observable<string[]>;
   itemCount = 0;
-  tooltipEl: HTMLElement | null = null;
-  @ViewChild('tooltipContainer') tooltipContainer!: ElementRef;
+
   tooltipContent = '';
   tooltipX = 0;
   tooltipY = 0;
   tooltipVisible = false;
+
+  dragPreviewVisible = false;
+  dragX = 0;
+  dragY = 0;
+  dragPreviewType = '';
 
   constructor(private dialog: MatDialog) { }
 
@@ -62,7 +67,17 @@ export class App {
     );
   }
 
-  private _filter(value: string): string[] {
+  ngAfterViewInit(): void {
+    interact('.sensor-item').draggable({
+      inertia: true,
+      autoScroll: true,
+      listeners: {
+        move: () => { },
+      }
+    });
+  }
+
+  _filter(value: string): string[] {
     const filterValue = value.toLowerCase();
     return this.allSensors.filter(option => option.toLowerCase().includes(filterValue));
   }
@@ -83,6 +98,23 @@ export class App {
     }
   }
 
+  prepareDrag(sensor: string): void {
+    this.dragPreviewType = sensor;
+    this.dragPreviewVisible = true;
+    window.addEventListener('mousemove', this.trackMouse);
+    window.addEventListener('mouseup', this.stopDragPreview);
+  }
+
+  trackMouse = (event: MouseEvent): void => {
+    this.dragX = event.clientX + 10;
+    this.dragY = event.clientY + 10;
+  };
+
+  stopDragPreview = (): void => {
+    this.dragPreviewVisible = false;
+    window.removeEventListener('mousemove', this.trackMouse);
+    window.removeEventListener('mouseup', this.stopDragPreview);
+  };
 
   onSVGUpload(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -106,22 +138,6 @@ export class App {
       }
     };
     reader.readAsText(file);
-  }
-
-  prepareDrag(sensor: string): void {
-    // Drag is now handled globally in ngAfterViewInit
-  }
-
-  ngAfterViewInit(): void {
-    interact('.sensor-item').draggable({
-      inertia: true,
-      autoScroll: true,
-      listeners: {
-        move: () => {
-          // Optional: no DOM changes here to avoid duplicate icons
-        }
-      }
-    });
   }
 
   enableDrop(svgEl: SVGElement): void {
@@ -164,19 +180,16 @@ export class App {
     const svgEl = this.svgContainer.nativeElement.querySelector('svg');
     if (!svgEl) return;
 
-    const ns = 'http://www.w3.org/2000/svg';
-    const point = this.getSVGCoordinates(cx, cy, svgEl);
-
-    // 🔍 Find the room containing the drop point
-    const room = this.findContainingRoom(svgEl, point.x, point.y);
+    const room = this.findContainingRoom(svgEl, cx, cy);
     if (!room) {
-      alert('Please drop inside a room.');
+      alert('Please drop inside a valid room.');
       return;
     }
 
+    const ns = 'http://www.w3.org/2000/svg';
     const icon = document.createElementNS(ns, 'text');
-    icon.setAttribute('x', point.x.toString());
-    icon.setAttribute('y', point.y.toString());
+    icon.setAttribute('x', cx.toString());
+    icon.setAttribute('y', cy.toString());
     icon.setAttribute('font-family', 'Material Icons');
     icon.setAttribute('font-size', '24');
     icon.setAttribute('fill', '#3f51b5');
@@ -186,31 +199,43 @@ export class App {
     icon.setAttribute('class', 'sensor-icon');
     icon.setAttribute('title', type);
 
-    // ➕ Add interactivity
     icon.addEventListener('mouseenter', (e) => this.showTooltip(e, type));
     icon.addEventListener('mouseleave', () => this.hideTooltip());
     icon.addEventListener('click', () => {
-      const dialogRef = this.dialog.open(SensorDetailDialogComponent, {
+      this.dialog.open(SensorDetailDialogComponent, {
         width: '300px',
         data: {
           id: icon.getAttribute('data-id'),
           type,
           area: room.getAttribute('data-room')
         }
-      });
-
-      dialogRef.afterClosed().subscribe(result => {
-        if (result?.delete) {
-          icon.remove(); // Remove from SVG
-        }
+      }).afterClosed().subscribe(result => {
+        if (result?.delete) icon.remove();
       });
     });
 
-    // 🔗 Append icon to the room element
     room.appendChild(icon);
+
+    // Enable moving sensor again
+    interact(icon).draggable({
+      inertia: true,
+      listeners: {
+        move: (event) => {
+          const x = (parseFloat(icon.getAttribute('x') || '0') || 0) + event.dx;
+          const y = (parseFloat(icon.getAttribute('y') || '0') || 0) + event.dy;
+          icon.setAttribute('x', x.toString());
+          icon.setAttribute('y', y.toString());
+        },
+        end: (event) => {
+          const point = this.getSVGCoordinates(event.clientX, event.clientY, svgEl);
+          const newRoom = this.findContainingRoom(svgEl, point.x, point.y);
+          if (newRoom) newRoom.appendChild(icon);
+        }
+      }
+    });
+
     this.itemCount++;
   }
-
 
   showTooltip(event: MouseEvent, content: string): void {
     this.tooltipX = event.offsetX + 10;

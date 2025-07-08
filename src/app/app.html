@@ -3,7 +3,13 @@
   <button mat-button (click)="fileInput.click()">Choose SVG</button>
   <button mat-button color="primary" (click)="savePositions()">Save</button>
   <button mat-button color="warn" (click)="clearAll()">Clear</button>
-  <input type="file" #fileInput hidden (change)="onSVGUpload($event)" accept=".svg" />
+  <input
+    type="file"
+    #fileInput
+    hidden
+    (change)="onSVGUpload($event)"
+    accept=".svg"
+  />
 </header>
 
 <div class="layout">
@@ -33,7 +39,22 @@
     <div #svgContainer class="svg-container"></div>
   </main>
 
-  <div #tooltipContainer class="tooltip-container" *ngIf="tooltipVisible" [style.left.px]="tooltipX" [style.top.px]="tooltipY">
-  {{ tooltipContent }}
-</div>
+  <div
+    #tooltipContainer
+    class="tooltip-container"
+    *ngIf="tooltipVisible"
+    [style.left.px]="tooltipX"
+    [style.top.px]="tooltipY"
+  >
+    {{ tooltipContent }}
+  </div>
+
+  <div
+    *ngIf="dragPreviewVisible"
+    class="drag-preview"
+    [style.left.px]="dragX"
+    [style.top.px]="dragY"
+  >
+    <mat-icon>{{ getSensorIcon(dragPreviewType) }}</mat-icon>
+  </div>
 </div>

@@ -17,6 +17,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "baseHref": "/svg-dnd-map/",
             "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
